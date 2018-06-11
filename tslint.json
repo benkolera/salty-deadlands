@@ -1,0 +1,15 @@
+{
+  "defaultSeverity": "error",
+  "extends": [
+    "tslint-config-airbnb"
+  ],
+  "lintOptions": {
+    "typeCheck": true
+  },
+  "rules": {
+    "indent": [true, "spaces", 4],
+    "ter-indent": [true, 4],
+    "no-else-after-return": ["false"],
+    "quotemark":[false]
+  }
+}

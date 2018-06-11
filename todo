@@ -1,0 +1,8 @@
+- get dice stats (webworker)
+- wire dice stats to button
+- cache dice stats on aptitude change
+- invent aptitudes where bonuses bring them in
+- Have spell effects last turns and have an End Turn button.
+- Track wind damage
+- Save results to backend
+- Weapon and Ammo tracking
