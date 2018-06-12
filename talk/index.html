@@ -1,0 +1,508 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+        <title>reveal.js</title>
+
+        <link rel="stylesheet" href="css/reveal.css">
+        <link rel="stylesheet" href="css/theme/white.css">
+
+        <!-- Theme used for syntax highlighting of code -->
+        <link rel="stylesheet" href="lib/css/zenburn.css">
+
+        <!-- Printing and PDF exports -->
+        <script>
+            var link = document.createElement( 'link' );
+            link.rel = 'stylesheet';
+            link.type = 'text/css';
+            link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+            document.getElementsByTagName( 'head' )[0].appendChild( link );
+        </script>
+        <style>
+            .title {
+                background-color: white; 
+                opacity: 0.95;
+                border-radius: 5px;
+            }
+
+            body {
+                background: #FAFAFA;
+                background-color: #FAFAFA; 
+            }
+            .reveal h1, .reveal h2, .reveal h3, .reveal h4, .reveal {
+                color: #666 !important; 
+            }
+        </style>
+    </head>
+    <body>
+        <div class="reveal">
+            <div class="slides">
+                <section data-background-image="pipes.jpg">
+                    <div class="title">
+                        <h1>Typescript Sodium</h1>
+                        <p>A talk for the <a href="http://bfpg.org">Brisbane FP Group</a> by <a href="https://twitter.com/benkolera">@benkolera</a>.</p>
+                    </div>
+                </section>
+                <section>
+                    <section>
+                        <h1>Talk Motivations</h1>
+                    </section>
+                    <section>
+                        <p>I like building UI stuff!</p>
+                    </section>
+                    <section>
+                        <p>And I like functional programming!</p>
+                    </section>
+                    <section>
+                        <p>AKA: I like writing UIs that compose safely</p>
+                        <p class="fragment">(So I can reuse and refactor code without weird unexpected shit happening.)</p>
+                    </section>
+                    <section>
+                        <p>My work already have an observable based UI!</p>
+                        <p>(in Knockout.js and Typescript)</p>
+                    </section>
+                    <section>
+                        <p>Which isn't terrible, but doesn't quite win in the sanity preservation deparment.</p>
+                    </section>
+                    <section>
+                        <p>Work isn't ready for GHCJs or Purescript (yet!)</p>
+                    </section>
+                    <section>
+                        <p>Can TS Sodium give us some wins without switching languages?</p>
+                    </section>
+                    <section>
+                        <p>And I had a rad need for a little tool to help with an RPG! :)</p>
+                    </section>
+                    <section>
+                        <p>And I noticed that all of the non-trivial TS-Sodium demos used react.</p>
+                        <br>
+                        <p class="fragment">Wanted to see what that was all about.</p>
+                    </section>
+                </section>
+                <section>
+                    <section>
+                        <h1>Talk Outline &amp; Goals</h1>
+                    </section>
+                    <section>
+                        <h2>Goal: Take you on a journey</h2>
+                    </section>
+                    <section>
+                        <p>This is still early tech, so there is no sales pitch.</p>
+                    </section>
+                    <section>
+                        <p>And there are probably better ways to do this than I managed.</p>
+                    </section>
+                    <section>
+                        <p>And I'm not even sure that it's a good idea! ;)</p>
+                    </section>
+                    <section>
+                        <p>But at the very least makes you appreciate all the hard work that has gone into reflex-dom!</p>
+                    </section>
+                    <section>
+                        <h2>Outline</h2>
+                        <p class="fragment">Sodium Basics</p>
+                        <p class="fragment">React Basics</p>
+                        <p class="fragment">Sodium + React</p>
+                        <p class="fragment">Interlude: Deadlands</p>
+                        <p class="fragment">My Pet Project: Salty Deadlands</p>
+                        <p class="fragment">Other Options &amp; Wrap Up</p>
+                    </section>
+                </section>
+                <section>
+                    <section>
+                        <h1>Sodium</h1>
+                    </section>
+                    <section>
+                        <h2>An FRP Library</h2>
+                        <p>Event Sourcing done right™</p>
+                    </section>
+                    <section>
+                        <h2>Core Pieces:</h2>
+                        <p class="fragment">Cells: Continuous values over time</p>
+                        <p class="fragment">Streams: Discrete events pushed into the graph.</p>
+                        <br />
+                        <p class="fragment">Declarative combinators that guarantee sensible composition.</p>
+                    </section>
+                    <section>
+                        <h2>Cell</h2>
+                        <pre><code class="typescript" data-trim>
+                            const num: new Cell&lt;number&gt;(1);
+                            const doubled = num.map(n => n * 2);
+
+                            // &lt;Cell&lt;A&gt;&gt;.lift( b: Cell&lt;B&gt;, (A, B) => C): Cell&lt;C&gt;
+                            const added = num.lift( doubled, (n, d) => n + d);
+                        </code></pre>
+                        <p>Always has a value</p>
+                    </section>
+                    <section>
+                        <h2>Streams</h2>
+                        <pre><code class="hljs typescript" data-trim>
+                            const nums: new StreamSink&lt;number&gt;();
+
+                            const doubled: Stream&lt;number&gt; = num.map(n => n * 2);
+                            const evens: Stream&lt;number&gt; = num.filter(n => n % 2 === 0);
+
+                            nums.send(2);
+                        </code></pre>
+                        <p>Fires at discrete points in time with a value.</p>
+                    </section>
+                    <section>
+                        <h2>Combinators: Cell</h2>
+                        <pre><code class="hljs typescript" data-trim>
+                            Cell&lt;A&gt;.map: (f: A => B) => Cell&lt;B&gt;
+                            Cell&lt;A&gt;.lift*: (b:Cell&lt;B&gt;, f: (A, B) => C) => Cell&lt;C&gt;
+                            Operational.updates: (Cell&lt;A&gt;) => Stream&lt;A&gt;
+
+                            Cell.switchC: Cell&lt;Cell&lt;A&gt;&gt; => Cell&lt;A&gt;
+                            Cell.switchS: Cell&lt;Stream&lt;A&gt;&gt; => Stream&lt;A&gt;
+                            Cell&lt;A&gt;.sample: Cell&lt;A&gt; => A
+                        </code></pre>
+                    </section>
+                    <section>
+                        <h2>Combinators: Stream</h2>
+                        <pre><code class="hljs typescript" data-trim>
+                            Stream.never: Stream&lt;A&gt; // Never fires!
+                            Stream&lt;A&gt;.map: (f: A =&gt; B) =&gt; Stream&lt;B&gt;
+                            Stream&lt;A&gt;.merge: (b:Stream&lt;A&gt;, f: (A, A) =&gt; A) =&gt; Stream&lt;A&gt;
+                            Stream&lt;Array&lt;A&gt;&gt;.split: Stream&lt;A&gt;
+
+                            Stream&lt;A&gt;.hold: (A) =&gt; Cell&lt;A&gt;
+                            Stream&lt;A&gt;.snapshot*: (b:Cell&lt;B&gt;, f: (A, B) =&gt; C) =&gt; Stream&lt;C&gt;
+                        </code></pre>
+                    </section>
+                    <section>
+                        <h2>Loops</h2>
+                        <p>Sometimes to construct the graph we'll need a reference to a cell/stream before it is fully constructed.</p>
+                        <p class="fragment">We do this with CellLoop/StreamLoop</p>
+                    </section>
+                    <section>
+                        <pre><code class="hijs typescript" data-trim>
+                            const num = new CellLoop&lt;number&gt;();
+                            num.loop(
+                                tick.snapshot(num, (u, l) =&gt; l + 1).hold(0),
+                            );
+
+                            // Same as:
+                            //const num: Cell&lt;number&gt; = tick.accum(0, (u, l) =&gt; l + 1);
+                        </code></pre>
+                    </section>
+                    <section>
+                        <h2>Fizzbuzz</h2>
+                        <p>Lets look at src/FizzBuzz.ts</p>
+                    </section>
+                    <section>
+                        <h2>That's pretty much the whole public API</h2>
+                    </section>
+                    <section>
+                        <p>So you're on your own for the UI (right now at least)</p>
+                    </section>
+                    <section>
+                        <p>And that's a tricky problem to get performant (reflex has a big head start)!</p>
+                    </section>
+                </section>
+                <section>
+                    <section>
+                        <h1>React</h1>
+                    </section>
+                    <section>
+                        <pre><code class="stretch hijs javascript" data-trim>
+class Category extends React.Component {
+    render() {
+        const { category } = this.props;
+        return (
+        &lt;div&gt;
+            &lt;span&gt;{category}&lt;/span&gt;
+        &lt;/div&gt;
+        );
+    }
+}
+                        </code></pre>
+                    </section>
+                    <section>
+                        <pre><code class="stretch hijs javascript" data-trim>
+class Category extends React.Component {
+    constructor() {
+        this.state = {
+            clicked: 0
+        }
+    }
+    onClick() {
+        this.setState({ clicked: this.state.clicked + 1 });
+    }
+    render() {
+        const { category } = this.props;
+        const { clicked } = this.state;
+        return (
+        &lt;div&gt;
+            &lt;span&gt;{category}&lt;/span&gt;
+            &lt;button&gt;Clicked {clicked} times!&lt;/button&gt;
+        &lt;/div&gt;
+        );
+    }
+}
+                        </code></pre>
+                    </section>
+                    <section>
+                        <h2>Props Down, Callbacks Up</h2>
+                        <p>Maximise pure components by centralising state</p>
+                        <br>
+                        <p class="fragment">Computed values computed in render() from state and props</p>
+                    </section>
+                    <section>
+                        <h2>Redrawing</h2>
+                        <p>React makes decisions on whether to call render based on whether the props or state change.</p>
+                        <br>
+                        <p class="fragment">Render isn't written to DOM directly. Virtual dom diffs this render from the previous and makes appropriate changes.</p>
+                    </section>
+                    <section data-background-image="react-tree.png">
+
+                    </section>
+                    <section>
+                        <h2>Example</h2>
+                        <p>Lets look at src/ReactDemo.tsx</p>
+                    </section>
+                    <section>
+                        <h2>State and Props are very imperative</h2>
+                    </section>
+                    <section>
+                        <h2>Computed props coupled with the UI structure</h2>
+                        <p>Or you start putting computed props in state and risk stale data.</p>
+                        <br>
+                        <p class="fragment">Redux makes this problem worse, not better</p>
+                    </section>
+                </section>
+                <section>
+                    <section>
+                        <h1>Sodium + React</h1>
+                        <p class="fragment">AKA: lets try a shortcut!</p>
+                    </section>
+                    <section>
+                        <h2>Idea: Use sodium for state, react for rendering</h2>
+                        <br>
+                        <p class="fragment">VDom ought to help us render performantly.</p>
+                        <p class="fragment">JSX in TS is a nice enough way to template DOM UIs.</p>
+                    </section>
+                    <section>
+                        <h2>Pattern</h2>
+                        <p>Sets of Streams/Cells as a prop on each component</p>
+                        <ul>
+                            <li>Inputs (From parents)</li>
+                            <li>InternalFrp (Internal Rendering State)</li>
+                            <li>OutputFrp (Output for Parents)</li>
+                        </ul>
+                        <p>wired together by parent so that parent can pass in the inputs and reference the outputs</p>
+                    </section>
+                    <section>
+                        <h2>Example</h2>
+                        <p>Lets look at src/Select.tsx</p>
+                    </section>
+                </section>
+                <section>
+                    <section>
+                        <h1>Interlude: Deadlands</h1>
+                    </section>
+                    <section>
+                        <h2>Pen and Paper Roleplaying Game</h2>
+                    </section>
+                    <section>
+                        <h2>Alternative History</h2>
+                        <p>Technomagical Zombie Horror Western</p>
+                    </section>
+                    <section>
+                        <h2>Novel Mechanics</h2>
+                        <p>Exploding Dice: makes combat deadly.</p>
+                        <p>Limited Fate Chip Resource.</p>
+                        <p>Magic: Playing poker with the devil.</p>
+                        <p>Huge Variety and team need for diverse party skills.</p>
+                    </section>
+                    <section>
+                        <h2>Needed to automate</h2>
+                        <p>Wound Modifiers &amp; Spell Effects</p>
+                    </section>
+                    <section>
+                        <h2>Want to further automate</h2>
+                        <p>Calculating roll probabilities based on current effects.</p>
+                        <p>Wind (stamina) tracking.</p>
+                        <p>Ammo and Weapons.</p>
+                        <p>Keeping track of days for healing checks.</p>
+                        <p>Persisting data to backend or local storage.</p>
+                    </section>
+                </section>
+                <section>
+                    <section>
+                        <h1>Salty Deadlands</h1>
+                        <p>Lets look at the UI.</p>
+                    </section>
+                    <section>
+                        <h2>Model</h2>
+                        <p>Lets look at src/CharacterSheet/Model.ts</p>
+                    </section>
+                    <section>
+                        <h2>Spell Effect</h2>
+                        <p>Lets look at src/CharacterSheet/SpellEffects/SpellEffect.tsx</p>
+                    </section>
+                    <section>
+                        <h2>Spell Effect Section</h2>
+                        <p>Lets look at src/CharacterSheet/SpellEffects/SpellEffectSection.tsx</p>
+                    </section>
+                    <section>
+                        <h2>Spell Effects Column</h2>
+                        <p>Lets look at src/CharacterSheet/SpellEffects.tsx</p>
+                    </section>
+                    <section>
+                        <h2>Wound Tracker</h2>
+                        <p>Lets look at src/CharacterSheet/WoundTracker.tsx</p>
+                    </section>
+                    <section>
+                        <h2>Wiring up Trait Display</h2>
+                        <p>Lets look at src/TraitDisplay/PureAptitude.tsx</p>
+                        <p>Lets look at src/TraitDisplay.tsx</p>
+                    </section>
+                    <section>
+                        <h2>Summary</h2>
+                    </section>
+                    <section>
+                        <p>Declarative databinding works really well for this kind of UI.</p>
+                    </section>
+                    <section>
+                        <p>Lifting <pre><code data-trim>
+                            Cell&lt;Record&lt;A&gt;</A>&gt;
+                        </code></pre> 
+                        to 
+                        <pre><code data-trim>
+                            Cell&lt;Record&lt;Cell&lt;A&gt;&gt;&gt;
+                        </code></pre>
+                        <p>is boilerplatey without nice combinators.</p>
+                        <br>
+                        <p class="fragment">sodium-frp-react has some helper functions but I couldn't get the types to work. :(</p>
+                    </section>
+                    <section>
+                        <p>React Components limit usefulness of higher order Sodium combinators.</p>
+                    </section>
+                    <section>
+                        <p>Wiring in listens to state is boilerplatey too.</p>
+                    </section>
+                    <section>
+                        <p>In a UI with less dependent data, this probably isn't worth the fuss!</p>
+                    </section>
+                </section>
+                <section>
+                    <section>
+                        <h1>Alternatives</h1>
+                    </section>
+                    <section>
+                        <h2>Redux / Elm</h2>
+                    </section>
+                    <section>
+                        <p>Both boil a react-like component tree into a single state store + single event type + reducer.</p>
+                        <img src="redux.gif" width="70%"/>
+                    </section>
+                    <section>
+                        <p>Redux does better with hiding details of the global state as you go down the tree</p>
+                        <br>
+                        <p>Components only need to care about the state that they need rather than what their children need.</p>
+                        <br>
+                        <p>Basically does this with a lens/prism like thing.</p>
+                    </section>
+                    <section>
+                        <p>Redux TS &amp; Elm have comparable type safety too</p>
+                    </section>
+                    <section>
+                        <p>Most UI glitches smoothed out with Saga/RXJs</p>
+                    </section>
+                    <section>
+                        <h2>Observables: Knockout.js</h2>
+                        <p>Pretty much anything is better than knockout. As me over a beer.</p>
+                    </section>
+                    <section>
+                        <h2>Halogen + Purescript</h2>
+                    </section>
+                    <section>
+                        <p>Halogen is components with message passing between them.</p>
+                        <br>
+                        <p>Comms between components are very explicit, so a very cross-chatty thing like this would not work well.</p>
+                    </section>
+                    <section>
+                        <h2>Reflex-DOM + GHCJs</h2>
+                    </section>
+                    <section>
+                        <p>The gold standard. All of the nice FRP goodness with all of the nice FP goodness and good dom-writing functions.</p>
+                        <br>
+                        <p class="fragment">Obsidian are kicking arse with this stack. If you can get GHCJs over the line, it's your pick.</p>
+                    </section>
+                </section>
+                <section>
+                    <section>
+                        <h1>Conclusions</h1>
+                    </section>
+                    <section>
+                        <h2>FRP is a superset of Flux/Redux</h2>
+                    </section>
+                    <section>
+                        <h2>Gut feeling</h2>
+                        <p>Sometimes you want full-frp because you've got lots of interelated computed data.</p>
+                        <br>
+                        <p>Sometimes you just have boring components and want the simplicity of a flux/redux like setup.</h2>
+                    </section>
+                    <section>
+                        <p>It feels like it'd be nice to layer flux like components on top of reflex.</p>
+                        <br>
+                        <p class="fragment">Easier to grok for beginners &amp; can pair back to FRP when needed.</p>
+                    </section>
+                    <section>
+                        <h2>TS Sodium is not quite ready for DOM Heavy Interfaces</h2>
+                        <br>
+                        <p>You likely want to invest time in writing helpers and react-free dom-writing before jumping in.</p>
+                    </section>
+                    <section>
+                        <p>The actual FRP implementation is awesome though! :D</p>
+                    </section>
+                    <section>
+                        <h2>Problems with Experiment</h2>
+                        <p class="fragment">Geared too much towards computed values.</p>
+                        <p class="fragment">Very little events.</p>
+                        <p class="fragment">No external effects.</p>
+                        <br>
+                        <p class="fragment">Could actually be worse in practice than appeared today!</p>
+                    </section>
+                    <section>
+                        <h2>It was fun hacking with it though!</h2>
+                        <p class="fragment">But I'm a UI + FP nerd, so ymmv. ;)</p>
+                    </section>
+                    <section>
+                        <h2>We're hiring!</h2>
+                        <p>If Deadlands interests you as a game, I have a great group will welcome extra players! :)</p>
+                        <p>Also have a game of Star Frontiers with the same GM with room at the table. :)</p>
+                    </section>
+                    <section>
+                        <h2>Thanks for listening!</h2> 
+                        <p><small>Code &amp; Slides <br> <a href="https://github.com/benkolera/salty-deadlands">https://github.com/benkolera/salty-deadlands</a></small></p>
+                        <p><small>FRP Book (Blackheath &amp; Jones) <br> <a href="https://www.manning.com/books/functional-reactive-programming">https://www.manning.com/books/functional-reactive-programming</a></small></p>
+                        <p><small>Why Redux? <br> <a href="https://hackernoon.com/why-redux-cbfc6fc5f788">https://hackernoon.com/why-redux-cbfc6fc5f788</a></small></p>
+                    </section>
+                </section>
+            </div>
+        </div>
+
+        <script src="lib/js/head.min.js"></script>
+        <script src="js/reveal.js"></script>
+
+        <script>
+            // More info about config & dependencies:
+            // - https://github.com/hakimel/reveal.js#configuration
+            // - https://github.com/hakimel/reveal.js#dependencies
+            Reveal.initialize({
+                controlsTutorial: false,
+                history: true,
+                dependencies: [
+                    { src: 'plugin/markdown/marked.js' },
+                    { src: 'plugin/markdown/markdown.js' },
+                    { src: 'plugin/notes/notes.js', async: true },
+                    { src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
+                ]
+            });
+        </script>
+    </body>
+</html>

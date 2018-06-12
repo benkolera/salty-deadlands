@@ -1,0 +1,13 @@
+{
+  "name": "talk",
+  "version": "1.0.0",
+  "description": "Talk on Typescript Sodium",
+  "scripts": {
+    "watch":"live-server --no-browser --port=8000 ."	
+  },
+  "author": "Ben Kolera",
+  "license": "MIT",
+  "devDependencies": {
+    "live-server": "^1.2.0"
+  }
+}

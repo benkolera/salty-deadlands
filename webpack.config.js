@@ -3,8 +3,10 @@ const HtmlWebpackPlugin = require('html-webpack-plugin')
 
 module.exports = {
   entry: {
-    'bundles': './src/index.tsx',
-    "styles": './src/app.scss'
+    'charsheet': './src/CharacterSheet/index.tsx',
+    "charsheet_styles": './src/CharacterSheet/app.scss',
+    'fizzbuzz': './src/FizzBuzz.ts',
+    'react': './src/ReactDemo.tsx',
   },
   devtool: 'inline-source-map',
   module: {
@@ -39,7 +41,21 @@ module.exports = {
   plugins: [
     new HtmlWebpackPlugin({
       title: "Deadlands Character Sheet",
-      template: "assets/index.html"
+      filename: "index.html",
+      template: "assets/index.html",
+      chunks: ["charsheet_styles", "charsheet" ],
+    }),
+    new HtmlWebpackPlugin({
+      title: "FizzBuzz",
+      filename: "fizzbuzz.html",
+      template: "assets/index.html",
+      chunks: ["fizzbuzz"],
+    }),
+    new HtmlWebpackPlugin({
+      title: "React",
+      filename: "react.html",
+      template: "assets/index.html",
+      chunks: ["react"],
     })
   ]
 };
