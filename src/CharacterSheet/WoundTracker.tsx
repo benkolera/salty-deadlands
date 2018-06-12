@@ -7,6 +7,11 @@ import * as FRP from 'sodium-frp-react';
 import { NumberInput, NumberInputFrp, wireNumberInputFrp } from "../NumberInput";
 import { Select, SelectFrp, SelectOptions, wireSelectFrp } from "../Select";
 
+/*
+The job of this component is to display wound info, take damage and output
+the current wound modifier.
+*/
+
 export type Wound = 0 | 1 | 2 | 3 | 4 | 5;
 export type WoundTarget = "head" | "larm" | "rarm" | "torso" | "lleg" | "rleg";
 export type TargetedWoundChange = { target: WoundTarget, change: number };

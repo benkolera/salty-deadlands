@@ -9,6 +9,10 @@ import {
 } from "./SpellEffects/SpellEffectSection";
 import { DiceSet } from './DiceSet';
 
+/*
+This displays the whole right sidebar and outputs all active bonuses.
+*/
+
 export interface SpellEffectsInput {
     edges: Cell<EffectSet>;
     hinderances: Cell<EffectSet>;
@@ -34,6 +38,7 @@ export interface SpellEffectsFrp {
 }
 
 export function wireSpellEffectsFrp(input:SpellEffectsInput): SpellEffectsFrp {
+    // Thankfully this is much easier due to static structure
     const edgesFrp = wireSpellEffectSectionFrp({ effectSet: input.edges });
     const hinderancesFrp = wireSpellEffectSectionFrp({ effectSet: input.hinderances });
     const blessingsFrp = wireSpellEffectSectionFrp({ effectSet: input.blessings });

@@ -1,12 +1,17 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 
+// Define our inner component with a name and a value and a callback 
+// when our button is clicked
 export interface ListItemProps {
     name: string;
     value: number;
     onClick: (key:string) => void;
 }
 
+// And our pure inner component. Renders whatever it is given and
+// has no state of it's own (denoted by the empty record in the second
+// type variable).
 export class ListItem extends React.Component<ListItemProps, {}> {
     render() {
         const { name, value } = this.props;
@@ -18,22 +23,25 @@ export class ListItem extends React.Component<ListItemProps, {}> {
             </button>
         </li>;
     }
+    // When the button is clicked, we call the callback of the parent 
+    // with our key.
     onClick() {
         this.props.onClick(this.props.name);
     }
 }
 
-export interface ListProps {
-}
-
+// Our UI state is just a list of strings and a counter
+// of how many times they have been clicked on.
 export interface ListState {
     things: {[name:string]:number};
 }
 
-export class List extends React.Component<ListProps, ListState> {
-    constructor(props: ListProps) {
+// This is a top level components so no properties
+export class List extends React.Component<{}, ListState> {
+    constructor(props: {}) {
         super(props);
 
+        // We just initialise our state to something silly
         this.state = {
             things: {
                 foo: 0,
@@ -49,6 +57,7 @@ export class List extends React.Component<ListProps, ListState> {
         return <ul>
             {Object.keys(things).map((k) => {
                 return <ListItem
+                    // Any iterable of elements needs to have a key on each element
                     key={k}
                     name={k}
                     onClick={this.onClick.bind(this)}
@@ -57,6 +66,7 @@ export class List extends React.Component<ListProps, ListState> {
             })}
         </ul>;
     }
+    // Our on click at this level increments the counter for that key by one
     onClick(key:string): void {
         this.setState(
             { things: { ...this.state.things, [key]: this.state.things[key] + 1 } },
@@ -64,6 +74,8 @@ export class List extends React.Component<ListProps, ListState> {
     }
 }
 
+// And our top level. Renders a new instance of the List Component attaching 
+// it to the <div id=app></div> on the page.
 ReactDOM.render(
     <List />,
     document.getElementById('app'),

@@ -16,6 +16,11 @@ import {
     Concentrations, ConcentrationsFrp, wireConcentrationsFrp,
 } from './TraitDisplay/Concentrations';
 
+/*
+The Job of this component is to take all current bonuses, a trait and present the current dice sets
+for the aptitudes and traits.
+*/
+
 export interface PureAptitudeFrp {
     type: "pure";
     value: PureAptitudeCFrp;
@@ -28,6 +33,7 @@ export interface AptitudeWithConcentrationsFrp {
 
 export type AptitudeFrp = PureAptitudeFrp | AptitudeWithConcentrationsFrp;
 
+// This is undoubedly the worst function in the app
 function wireAptitudeFrp(
     traitName: string,
     thisKey:string,
@@ -122,6 +128,9 @@ export function wireTraitDisplayFrp(input: TraitDisplayInput): TraitDisplayFrp {
     const aptitudes = input.trait.lift(
         input.bonuses,
         (t, bs) => {
+            // TODO: Should have a helper. figure out why 
+            // sodium-frp-react.splitRecord doesn't work for
+            // these (doesn't type check).
             return Object.keys(t.aptitudes).reduce(
                 (out: {[key:string]:AptitudeFrp}, key:string) => {
                     const aptitude = t.aptitudes[key];

@@ -9,16 +9,27 @@ import {
 import { DiceSet } from '../DiceSet';
 import { NumberInput, NumberInputFrp, wireNumberInputFrp } from '../../NumberInput';
 
+/*
+This component manages drawing a single effect, including a form and a button
+if the effect actually is a spell bonus that needs some input.
+*/
+
+// The effect is our input
 export interface SpellEffectInput {
     effect: Cell<Effect>;
 }
 
+// Internally, we need to keep track of:
+//   spellInput: the state of the number input box we use if it is a spell
+//   toggle: an stream of events from the form button
+//   activated: whether this is on or off
 export interface SpellEffectInternal {
     spellInput: NumberInputFrp;
     toggle: StreamSink<Unit>;
     activated: Cell<boolean>;
 }
 
+// And we output either a bonus or null
 export interface SpellEffectOutput {
     bonus: Cell<Bonus | null>;
 }
@@ -37,6 +48,8 @@ export function wireSpellEffectFrp(input:SpellEffectInput): SpellEffectFrp {
         toggle.snapshot(activated, (u, a) => !a).hold(false),
     );
 
+    // Whether we output a bonus or not depends on the type
+    // and whether the effect is activated (if it is a spell).
     const bonus = activated.lift3(
         spellInput.output,
         input.effect,

@@ -4,8 +4,13 @@ import { Cell, StreamSink, Stream, CellLoop, Transaction } from 'sodiumjs';
 import { Wound } from '../WoundTracker';
 import { AptitudeKey, Bonus, bonusApplies, EffectSet, Effect } from '../Model';
 import { DiceSet } from '../DiceSet';
-
 import { SpellEffect, wireSpellEffectFrp, SpellEffectFrp } from './SpellEffect';
+
+/*
+This presents a list of effects, using the SpellEffect component for every effect
+*/
+
+// Pretty standard inputs and outputs
 export interface SpellEffectSectionInput {
     effectSet: Cell<EffectSet>;
 }
@@ -24,19 +29,7 @@ export interface SpellEffectSectionFrp {
     output: SpellEffectSectionOutput;
 }
 
-function passiveEffects(es:EffectSet):Bonus[] {
-    return Object.keys(es).map(
-        (k) => {
-            const v = es[k];
-            if (v.type === "passive") {
-                return v.bonus;
-            } else {
-                return null;
-            }
-        },
-    ).filter(x => x !== null) as Bonus[];
-}
-
+// And here is where shit gets weird...
 export function wireSpellEffectSectionFrp(input:SpellEffectSectionInput): SpellEffectSectionFrp {
     const spellEffectFrps: Cell<{[id:string]: SpellEffectFrp}> = input.effectSet.map((es) => {
         return Object.keys(es).reduce(

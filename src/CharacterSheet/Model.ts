@@ -1,6 +1,33 @@
 import { DiceSet, stepTraitType } from "./DiceSet";
 import * as _ from "lodash";
 
+/*
+This file describes a pure representation of a deadlands character
+
+Primariy, this describes Traits (Deftness, Vigor, Etc.)
+Aptitudes: Deftness: Shootin: Shotguns or Sprit:Faith
+
+Traits have a dice set (e.g 4d10). Aptitudes have a dice number. To roll 
+an aptitude, you take the dice set of the parent trait and apply the number
+for the aptitude to it.
+
+Say if you have Spirit : 4d12 and Faith: 5, your faith roll would be 5d12
+If you have Cognition 4d12 and Search 1, your search roll is 1d12.
+
+To roll, you roll the set of dice taking the highest. If the dice rolls maximum,
+then you get to roll that dice again and add it to the originally rolled dice.
+
+Say if you have 5d12 and you roll [3,4,7,9,11], the score is 11.
+If you have 5d12 and you roll [12,3,4,5,6] you roll another d12 and add it to the 12. (e.g 12+6 = 18).
+
+If you roll a majority of 1s, you bust regardless of any other dice rolls.
+
+See DiceSet and its test for more details.
+
+The rest of the information on the character are things that can modify the aptitudes (e.g Spell Buffs).
+*/
+
+// Aptitudes are either leaf pure values or they are a concentration group like Shootin.
 export interface PureAptitude {
     type: "pure";
     value: number;
@@ -13,64 +40,39 @@ export interface AptitudeWithConcentrations {
 
 export type Aptitude = PureAptitude | AptitudeWithConcentrations;
 
+// A trait (e.g Spirit) is a dice set and a set of aptitudes
 export interface Trait {
     diceSet: DiceSet;
     aptitudes: { [x:string]:Aptitude };
 }
 
-export interface SimpleEffect {
-    type: "simple";
-    desc?: string;
-}
+// We've got a whole heap of things that can affect our character
 
-export interface PassiveEffect {
-    type: "passive";
-    bonus: Bonus;
-    desc?: string;
-}
-
-export interface SpellEffect {
-    type: "spell";
-    spellInputDesc: string;
-    bonusFunc: ((rollRes:number) => Bonus | null);
-    desc?: string;
-}
-
-export type Effect = SimpleEffect | PassiveEffect | SpellEffect;
-
-export type EffectSet = { [key:string]: Effect };
-
-export interface Traits {
-    [key:string]: Trait;
-    Deftness: Trait;
-    Nimbleness: Trait;
-    Quickness: Trait;
-    Strength: Trait;
-    Vigor: Trait;
-    Cognition: Trait;
-    Knowledge: Trait;
-    Mien: Trait;
-    Smarts: Trait;
-    Spirit: Trait;
-}
-
+// An attribute bonus adds a positive or negative to the roll.
+// This adds or subtracts from the final total of the roll.
+// 
+// We call it attribute rather than aptitude because it can apply to
+// a aptitude or trait.
 export interface AttributeBonus {
     type: "bonus";
     bonus: number;
 }
 
+// Some bonuses replace a diceset entirely
 export interface AttributeDiceSub {
     type: "dice_sub";
     newDice: DiceSet;
 }
 
+// Some bonuses promote the dice side (e.g d6 to d8, d12 to d12+2)
 export interface AttributeDicePromote {
     type: "dice_promote";
     faces: number;
 }
 
-export type AttributeEffect = AttributeBonus | AttributeDiceSub | AttributeDicePromote;
+export type AttributeBonusEffect = AttributeBonus | AttributeDiceSub | AttributeDicePromote;
 
+// These records are used to fuzzy match spell effects to attributes
 export interface AptitudeFilter {
     traitName?: string;
     concentrationName?: string | null;
@@ -83,13 +85,16 @@ export interface AptitudeKey {
     aptitudeName: string;
 }
 
+// Attribute Bonuses fuzzy match aptitudes and apply a bonus 
+// if they match.
 export interface AptitudeBonus {
     type: "aptitude";
     filter: AptitudeFilter;
-    effect: AttributeEffect;
+    effect: AttributeBonusEffect;
     reason: string;
 }
 
+// Light armor bonus just adds to the light armor rating of the character
 export interface LightArmorBonus {
     type: "light_armor";
     bonus: number;
@@ -98,6 +103,9 @@ export interface LightArmorBonus {
 
 export type Bonus = AptitudeBonus | LightArmorBonus;
 
+// Complicated fuzzy matching logic for filter keys
+// the ides is that an empty filter matches everything
+// To match a trait you need to set aptitude and concentration to null
 function filterKeyApplies(filter?:string | null, key?:string | null): boolean {
     return filter === undefined || key === undefined || filter === key;
 }
@@ -120,6 +128,8 @@ export function bonusApplies(key:AptitudeFilter):(b:Bonus) => boolean {
 export function applyAptitudeBonuses(ds:DiceSet, bs:Bonus[]):DiceSet {
     const attrBonuses:AptitudeBonus[] = bs.filter(x => x.type === "aptitude") as AptitudeBonus[];
 
+    // this sorting is a good indication that this composition should be applied in FRP land
+    // rather than in our imperative world.
     return _.sortBy(
         attrBonuses,
         (x) => {
@@ -144,14 +154,61 @@ export function applyAptitudeBonuses(ds:DiceSet, bs:Bonus[]):DiceSet {
         ds,
     );
 }
+// Simple effects just have a description for stuff that isn't automated
+export interface SimpleEffect {
+    type: "simple";
+    desc?: string;
+}
+
+// Passive Effects always apply their bonus
+export interface PassiveEffect {
+    type: "passive";
+    bonus: Bonus;
+    desc?: string;
+}
+
+// Spell effects require a roll and the bonus is calculated from that.
+export interface SpellEffect {
+    type: "spell";
+    spellInputDesc: string;
+    bonusFunc: ((rollRes:number) => Bonus | null);
+    desc?: string;
+}
+
+export type Effect = SimpleEffect | PassiveEffect | SpellEffect;
+
+export type EffectSet = { [key:string]: Effect };
+
+// These are all of the traits for our character.
+export interface Traits {
+    [key:string]: Trait;
+    Deftness: Trait;
+    Nimbleness: Trait;
+    Quickness: Trait;
+    Strength: Trait;
+    Vigor: Trait;
+    Cognition: Trait;
+    Knowledge: Trait;
+    Mien: Trait;
+    Smarts: Trait;
+    Spirit: Trait;
+}
+
 
 export interface CharacterSheet {
     traits: Traits;
+    // Edges are good effects that your character has
     edges: EffectSet;
+    // Hinderances are the opposite
     hinderances: EffectSet;
+    // Knacks are a supernatural kind of edge
     knacks: EffectSet;
+    // Blessings are priestly spells
     blessings: EffectSet;
+    // Size determines how many wounds you take from damage
+    // you take floor(damage / size) wounds when you take damage
     size: number;
+    // Light armor subtracts from damage before it is divided by size for wounds.
     lightArmor: number;
 }
 
@@ -169,6 +226,7 @@ const concentrated = (rec: {[key:string]:PureAptitude}):AptitudeWithConcentratio
     };
 };
 
+// And this is the actual data that powers my character.
 export const gabriela:CharacterSheet = {
     traits: {
         Deftness: {
