@@ -233,7 +233,7 @@ export const gabriela:CharacterSheet = {
             diceSet: new DiceSet(4, 8),
             aptitudes: {
                 Shootin: concentrated({
-                    Shotgun: pureApt(2),
+                    Shotgun: pureApt(3),
                 }),
             },
         },
