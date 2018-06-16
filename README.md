@@ -32,6 +32,9 @@ in a few combinators that would improve the ergonomics of this app.
   - We either need to make helpers to bind frp state into react automagically (like what 
     sodium-frp-react is doing) or start work on building DOM out of a cell graph (and 
     having all the machinery for that to be performant).
+  - Using react with sodium denies us some use of the higher order sodium tools like
+    switchC. At least I tended to make the conditional logic in the render functions
+    rather than switching things in and out of the graph.
 
 Overall while I think this stuff would be a lot prettier in a more mature FRP-Dom 
 thing like Reflex, I still had a boat load of fun hacking around with this! I hope 
