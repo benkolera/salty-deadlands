@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { Cell, StreamSink, Stream, CellLoop, Transaction } from 'sodiumjs';
+import { Cell, StreamSink, Stream, CellLoop, Transaction, Unit } from 'sodiumjs';
 import * as FRP from 'sodium-frp-react';
 import { Wound } from './WoundTracker';
 import { AptitudeKey, Bonus, bonusApplies, EffectSet } from './Model';
@@ -18,6 +18,8 @@ export interface SpellEffectsInput {
     hinderances: Cell<EffectSet>;
     blessings: Cell<EffectSet>;
     knacks: Cell<EffectSet>;
+    roundProgressed: Stream<Unit>;
+    combatEnded: Stream<Unit>;
 }
 
 export interface SpellEffectsInternal {
@@ -39,10 +41,26 @@ export interface SpellEffectsFrp {
 
 export function wireSpellEffectsFrp(input:SpellEffectsInput): SpellEffectsFrp {
     // Thankfully this is much easier due to static structure
-    const edgesFrp = wireSpellEffectSectionFrp({ effectSet: input.edges });
-    const hinderancesFrp = wireSpellEffectSectionFrp({ effectSet: input.hinderances });
-    const blessingsFrp = wireSpellEffectSectionFrp({ effectSet: input.blessings });
-    const knacksFrp = wireSpellEffectSectionFrp({ effectSet: input.knacks });
+    const edgesFrp = wireSpellEffectSectionFrp({
+        effectSet: input.edges,
+        roundProgressed: input.roundProgressed,
+        combatEnded: input.combatEnded,
+    });
+    const hinderancesFrp = wireSpellEffectSectionFrp({
+        effectSet: input.hinderances,
+        roundProgressed: input.roundProgressed,
+        combatEnded: input.combatEnded,
+    });
+    const blessingsFrp = wireSpellEffectSectionFrp({
+        effectSet: input.blessings,
+        roundProgressed: input.roundProgressed,
+        combatEnded: input.combatEnded,
+    });
+    const knacksFrp = wireSpellEffectSectionFrp({
+        effectSet: input.knacks,
+        roundProgressed: input.roundProgressed,
+        combatEnded: input.combatEnded,
+    });
 
     const passiveBonuses = edgesFrp.output.bonuses.lift4(
         hinderancesFrp.output.bonuses,

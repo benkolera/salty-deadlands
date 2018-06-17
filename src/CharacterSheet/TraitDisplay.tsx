@@ -1,7 +1,7 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import * as _ from "lodash";
-import { Cell, StreamSink, Stream, CellLoop, Transaction } from 'sodiumjs';
+import { Cell, StreamSink, Stream, CellLoop, Transaction, Unit } from 'sodiumjs';
 import * as FRP from 'sodium-frp-react';
 import {
     Bonus, bonusApplies, CharacterSheet, Trait, Aptitude, AptitudeWithConcentrations,
@@ -128,7 +128,7 @@ export function wireTraitDisplayFrp(input: TraitDisplayInput): TraitDisplayFrp {
     const aptitudes = input.trait.lift(
         input.bonuses,
         (t, bs) => {
-            // TODO: Should have a helper. figure out why 
+            // TODO: Should have a helper. figure out why
             // sodium-frp-react.splitRecord doesn't work for
             // these (doesn't type check).
             return Object.keys(t.aptitudes).reduce(

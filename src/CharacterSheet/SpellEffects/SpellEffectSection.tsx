@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { Cell, StreamSink, Stream, CellLoop, Transaction } from 'sodiumjs';
+import { Cell, StreamSink, Stream, CellLoop, Transaction, Unit } from 'sodiumjs';
 import { Wound } from '../WoundTracker';
 import { AptitudeKey, Bonus, bonusApplies, EffectSet, Effect } from '../Model';
 import { DiceSet } from '../DiceSet';
@@ -13,6 +13,8 @@ This presents a list of effects, using the SpellEffect component for every effec
 // Pretty standard inputs and outputs
 export interface SpellEffectSectionInput {
     effectSet: Cell<EffectSet>;
+    roundProgressed: Stream<Unit>;
+    combatEnded: Stream<Unit>;
 }
 
 export interface SpellEffectSectionInternal {
@@ -35,7 +37,11 @@ export function wireSpellEffectSectionFrp(input:SpellEffectSectionInput): SpellE
         return Object.keys(es).reduce(
             (out: {[key:string]: SpellEffectFrp}, key: string) => {
                 const effect = input.effectSet.map(es => es[key]);
-                return { ...out, [key]: wireSpellEffectFrp({ effect }) };
+                return { ...out, [key]: wireSpellEffectFrp({
+                    effect,
+                    roundProgressed: input.roundProgressed,
+                    combatEnded: input.combatEnded,
+                }) };
             },
             {},
         );

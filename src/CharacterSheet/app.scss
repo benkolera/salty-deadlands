@@ -122,32 +122,53 @@ html, body, #app {
         .effects-section {
             margin-bottom: 2em;
             .effect {
+                &:first-of-type {
+                    border-top: 1px dotted #666;
+                }
                 text-align: left;
-                margin-top: -0.5em; 
                 border-bottom: 1px dotted #666;
+                padding: 0.7rem 0 0.5rem 0;
+
+                .toggle-desc {
+                    float: right;
+                    font-size: 0.7rem;
+                    margin-top: -5px;
+                }
+
+                .name {
+                    font-weight: bold;
+                }
+
+                .short-desc {
+                    font-size: 0.8em;
+                }
 
                 .effect-desc {
-                    margin-top: -0.9em;
                     font-size: 0.9em;
+                    font-family: Arial, Helvetica, sans-serif;
+                    padding: 0.1rem;
                 }
 
                 .spell-form {
-                    margin-top: -1em;
                     margin-bottom: 0.5em;
+                    button {
+                        margin-right: 0.5rem;
+                    }
+                    .active-rounds {
+                        font-size: 0.8em;
+                        color: green;
+                    }
                 }
             }
         }
     }
 }
 
-.damage-input {
-    width: 5em;
-}
 
 @mixin wound-tracker($image) {
     background-image: url($image);
-    width: 200px;
-    height: 348px;
+    width: 20rem;
+    height: 20rem;
     background-position: center;
     background-repeat: no-repeat;
     background-size: contain;
@@ -163,16 +184,21 @@ html, body, #app {
     @include card();
     padding-bottom: 1em;
 
+    .physical-deets {
+        margin-top: 0.5em;
+        margin-bottom: 0.5em;
+    }
+
+    .damage-input {
+        width: 3em;
+    }
+
     .wounds-container {
-        width: 250px;
-        height: 480px;
-        padding: 0 25px;
+        width: 20rem;
+        height: 20rem;
+        padding: 0 2em;
         margin: auto;
 
-        .physical-deets {
-            margin-top: 0.5em;
-            margin-bottom: 0.5em;
-        }
 
         .dead {
             @include wound-tracker("../../assets/death.svg");

@@ -3,10 +3,11 @@ import * as ReactDOM from 'react-dom';
 import * as _ from "lodash";
 import { DiceSet } from './DiceSet';
 import St_TeresaJpg from '../../assets/St_Teresa.jpg';
-import { Cell, CellLoop, Transaction } from 'sodiumjs';
+import { Cell, CellLoop, Transaction, Stream, StreamSink, Unit } from 'sodiumjs';
 
 import { SpellEffects, SpellEffectsFrp, wireSpellEffectsFrp } from './SpellEffects';
 import { WoundTracker, WoundTrackerFrp, wireWoundTrackerFrp } from './WoundTracker';
+import { TurnTracker, TurnTrackerFrp, wireTurnTrackerFrp } from './TurnTracker';
 import {
     TraitDisplay, TraitDisplayInput, wireTraitDisplayInput, wireTraitDisplayFrp,
 } from './TraitDisplay';
@@ -34,6 +35,7 @@ export interface CharacterSheetInternal {
     traitCells: TraitsFrp;
     woundTrackerFrp: WoundTrackerFrp;
     spellEffectsFrp: SpellEffectsFrp;
+    turnTrackerFrp: TurnTrackerFrp;
 }
 
 export interface CharacterSheetOutput {
@@ -57,12 +59,17 @@ export function wireCharacterSheetFrp(input: CharacterSheetInput):CharacterSheet
         const blessings = input.sheet.map(x => x.blessings);
         const knacks = input.sheet.map(x => x.knacks);
 
+        const turnTrackerFrp = wireTurnTrackerFrp({});
+
         const spellEffectsFrp:SpellEffectsFrp = wireSpellEffectsFrp({
             edges,
             hinderances,
             blessings,
             knacks,
+            roundProgressed: turnTrackerFrp.output.roundProgressed,
+            combatEnded: turnTrackerFrp.output.combatEnded,
         });
+
         const woundTrackerFrp = wireWoundTrackerFrp(woundInputs);
 
         const bonuses: Cell<CS.Bonus[]> = spellEffectsFrp.output.bonuses.lift(
@@ -122,6 +129,7 @@ export function wireCharacterSheetFrp(input: CharacterSheetInput):CharacterSheet
                 traitCells,
                 woundTrackerFrp,
                 spellEffectsFrp,
+                turnTrackerFrp,
             },
         };
     });
@@ -153,6 +161,7 @@ export class CharacterSheet extends React.Component<CharacterSheetProps, Charact
                 </ul>
             </div>
             <div className="effects">
+                <TurnTracker frp={frp.internal.turnTrackerFrp} />
                 <div className="info">
                     <h2>Sister Gabriela</h2>
                     <img src={St_TeresaJpg} width="125" />
