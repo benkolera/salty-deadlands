@@ -46,6 +46,19 @@ export interface DiceSetCloneI {
     bonus?: number;
 }
 
+export interface ExplodingRoll {
+    sum: boolean;
+    tn?: number;
+    raises: boolean;
+}
+
+function toExplodingCode(e:ExplodingRoll): string {
+    return "!" +
+        (e.sum ? "" : "k") +
+        (e.tn !== undefined ? "t" + e.tn : "") +
+        (e.raises ? "s5" : "");
+}
+
 export class DiceSet {
     sides: Sides;
     num: number;
@@ -64,6 +77,11 @@ export class DiceSet {
     }
     addBonus(bonus:number): DiceSet {
         return this.clone({ bonus: this.bonus + bonus });
+    }
+    toFgCode(exploding?:ExplodingRoll): string {
+        return this.toString() + (
+            exploding !== undefined ? toExplodingCode(exploding) : ""
+        );
     }
     toString() {
         const bonusSign = this.bonus > 0 ? "+" : "";
@@ -139,18 +157,18 @@ export function rollDamage(chance: Chance.Chance, ds: DiceSet): number {
 // tslint:disable-next-line:function-name
 export function _traitResult(
     diceRes: number[],
-    ds: DiceSet,
+    bonus: number,
 ): TraitResult {
     const out = _bustedOrMax(diceRes);
     if (out !== "bust") {
-        return out + ds.bonus;
+        return out + bonus;
     } else {
         return "bust";
     }
 }
 
 export function rollTrait(chance: Chance.Chance, ds: DiceSet): TraitResult {
-    return _traitResult(rollDice(chance, ds), ds);
+    return _traitResult(rollDice(chance, ds), ds.bonus);
 }
 
 // tslint:disable-next-line:function-name
@@ -163,14 +181,10 @@ export function _successesVsTn(
     res: TraitResult,
     tn: number,
 ): VsTn<Successes> {
-    if (res === "bust") {
-        return "bust";
-    } else if (res < tn) {
-        return "failure";
-    } else {
-        const diff = res - tn;
-        return _successes(diff);
-    }
+    return mapVsTn(
+        _aboveTn(res, tn),
+        _successes,
+    );
 }
 
 export function successesVsTn(
@@ -182,7 +196,7 @@ export function successesVsTn(
 }
 
 // tslint:disable-next-line:function-name
-export function _aboveTn(tn: number, res: TraitResult): VsTn<number> {
+export function _aboveTn(res: TraitResult, tn: number): VsTn<number> {
     if (res === "bust") {
         return "bust";
     } else if (res >= tn) {
@@ -197,11 +211,11 @@ export function aboveTn(
     ds: DiceSet,
     tn: number,
 ): VsTn<number> {
-    return _aboveTn(tn, rollTrait(chance, ds));
+    return _aboveTn(rollTrait(chance, ds), tn);
 }
 
 // tslint:disable-next-line:function-name
-export function _opposedRole(
+export function _opposedRoll(
     attackRes:VsTn<number>,
     defendRes:VsTn<number>,
 ):OpposedResult {
@@ -243,7 +257,7 @@ export const opposedRoll = (
     attackerDs: DiceSet,
     defenderDs: DiceSet,
 ): OpposedResult => {
-    return _opposedRole(
+    return _opposedRoll(
         aboveTn(chance, attackerDs, 5),
         aboveTn(chance, defenderDs, 5),
     );
