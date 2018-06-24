@@ -146,10 +146,11 @@ export function wireSpellEffectFrp(input:SpellEffectInput): SpellEffectFrp {
         if (ds && e.type === "spell") {
             if (e.tn === "Opposed") {
                 return "/die " + ds.toFgCode({ tn: 5, sum: false, raises: true });
-            } else if (e.tn === "Special") {
-                return ""; // TODO
-            } else {
+            } else if (typeof e.tn === "number") {
                 return "/die " + ds.toFgCode({ tn: e.tn, sum: false, raises: true });
+            } else {
+                // TODO: Sets of dice sets (e.g Lay on Hands)
+                return "";
             }
         } else {
             return "";
