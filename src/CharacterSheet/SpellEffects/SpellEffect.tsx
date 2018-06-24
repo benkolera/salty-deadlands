@@ -145,11 +145,11 @@ export function wireSpellEffectFrp(input:SpellEffectInput): SpellEffectFrp {
     const inputText = diceSet.lift(input.effect, (ds, e) => {
         if (ds && e.type === "spell") {
             if (e.tn === "Opposed") {
-                return "\\die " + ds.toFgCode({ tn: 5, sum: false, raises: true });
+                return "/die " + ds.toFgCode({ tn: 5, sum: false, raises: true });
             } else if (e.tn === "Special") {
                 return ""; // TODO
             } else {
-                return "\\die " + ds.toFgCode({ tn: e.tn, sum: false, raises: true });
+                return "/die " + ds.toFgCode({ tn: e.tn, sum: false, raises: true });
             }
         } else {
             return "";

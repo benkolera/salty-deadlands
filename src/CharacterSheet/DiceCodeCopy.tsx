@@ -42,7 +42,7 @@ export function wireDiceCodeCopyFrp(input:DiceCodeCopyInput): DiceCodeCopyFrp {
 
     const diceText = numberInput.output.lift3(input.diceSet, untrained, (tn, ds, u) => {
         const d = u ? ds.clone({ num: 1, bonus: ds.bonus - 4 }) : ds;
-        return "\\die " + d.toFgCode({ tn, sum: false, raises: true });
+        return "/die " + d.toFgCode({ tn, sum: false, raises: true });
     });
 
     const clipboardFrp = wireClipboardFrp({
