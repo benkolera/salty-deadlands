@@ -90,7 +90,7 @@ type DamageUnit = "wounds" | "damage";
 export function wireWoundTrackerFrp(inputs: WoundInputs): WoundTrackerFrp {
     return Transaction.run(() => {
         const reset = new StreamLoop<Unit>();
-        const damageInput = wireNumberInputFrp(reset.mapTo(undefined));
+        const damageInput = wireNumberInputFrp({ setInput: reset.mapTo(undefined) });
         const applyDamage = new StreamSink<Unit>();
         const selectTargetFrp = wireSelectFrp<WoundTarget>(
             "head",

@@ -40,7 +40,7 @@ export function wireTurnTrackerFrp(input:TurnTrackerInput): TurnTrackerFrp {
     inCombat.loop(toggleCombat.snapshot(inCombat, (u, i) => !i).hold(false));
     const round    = new CellLoop<number>();
     const roundActions:Stream<RoundProgressor> =
-        toggleCombat.mapTo<RoundProgressor>(r => 0).merge(
+        toggleCombat.mapTo<RoundProgressor>(r => 1).merge(
             progressRound.mapTo<RoundProgressor>(r => r + 1),
             (r, i) => r,
         );

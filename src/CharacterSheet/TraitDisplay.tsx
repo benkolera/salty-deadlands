@@ -15,6 +15,8 @@ import { Wound } from "./WoundTracker";
 import {
     Concentrations, ConcentrationsFrp, wireConcentrationsFrp,
 } from './TraitDisplay/Concentrations';
+import { leftmost } from "./Utils";
+import { DiceCodeCopy, wireDiceCodeCopyFrp, DiceCodeCopyFrp } from './DiceCodeCopy';
 
 /*
 The Job of this component is to take all current bonuses, a trait and present the current dice sets
@@ -98,12 +100,15 @@ export interface TraitDisplayInput {
     bonuses: Cell<Bonus[]>;
 }
 
+type AptitudesFrp = { [x:string]:AptitudeFrp };
+
 export interface TraitDisplayInternal {
-    diceSet: Cell<DiceSet>;
-    aptitudes: Cell<{ [x:string]:AptitudeFrp }>;
+    diceCodeCopyFrp: DiceCodeCopyFrp;
 }
 
 export interface TraitDisplayOutput {
+    diceSet: Cell<DiceSet>;
+    aptitudes: Cell<AptitudesFrp>;
 }
 
 export interface TraitDisplayFrp {
@@ -125,7 +130,7 @@ export function wireTraitDisplayInput(
 }
 
 export function wireTraitDisplayFrp(input: TraitDisplayInput): TraitDisplayFrp {
-    const aptitudes = input.trait.lift(
+    const aptitudes:Cell<AptitudesFrp> = input.trait.lift(
         input.bonuses,
         (t, bs) => {
             // TODO: Should have a helper. figure out why
@@ -163,12 +168,16 @@ export function wireTraitDisplayFrp(input: TraitDisplayInput): TraitDisplayFrp {
         return out;
     });
 
+    const diceCodeCopyFrp = wireDiceCodeCopyFrp({ diceSet });
+
     return {
         input,
-        output: {},
-        internal: {
+        output: {
             diceSet,
             aptitudes,
+        },
+        internal: {
+            diceCodeCopyFrp,
         },
     };
 }
@@ -187,16 +196,16 @@ export class TraitDisplay extends React.Component<TraitDisplayProps, TraitDispla
     constructor(props:TraitDisplayProps) {
         super(props);
         this.state = {
-            diceSet: this.props.frp.internal.diceSet.sample(),
-            aptitudes: this.props.frp.internal.aptitudes.sample(),
+            diceSet: this.props.frp.output.diceSet.sample(),
+            aptitudes: this.props.frp.output.aptitudes.sample(),
         };
     }
 
     public componentDidMount() {
-        this.props.frp.internal.diceSet.listen((diceSet) => {
+        this.props.frp.output.diceSet.listen((diceSet) => {
             this.setState({ diceSet });
         });
-        this.props.frp.internal.aptitudes.listen((aptitudes) => {
+        this.props.frp.output.aptitudes.listen((aptitudes) => {
             this.setState({ aptitudes });
         });
     }
@@ -214,7 +223,10 @@ export class TraitDisplay extends React.Component<TraitDisplayProps, TraitDispla
 
         return <li className="trait">
             <span className="trait-name">{traitName}</span>
-            <span className="trait-dice">{diceSet.toString()}</span>
+            <span className="trait-dice">
+                {diceSet.toString()}
+                <DiceCodeCopy type="trait" frp={this.props.frp.internal.diceCodeCopyFrp} />
+            </span>
             <ul className="aptitudes">
                 {Object.keys(aptitudes).map((k) => {
                     const v = aptitudes[k];

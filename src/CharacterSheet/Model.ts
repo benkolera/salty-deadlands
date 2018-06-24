@@ -179,6 +179,7 @@ export interface SpellEffect {
     type: "spell";
     spellInputDesc: string;
     bonusFunc: ((rollRes:number) => Bonus | null);
+    aptitudeRollKey: AptitudeKey;
     tn: Tn;
     speed: string;
     range: string;
@@ -408,6 +409,7 @@ export const gabriela:CharacterSheet = {
                     reason: "Armor of Righteousness",
                 };
             },
+            aptitudeRollKey: { traitName: "Spirit", aptitudeName: "Faith" },
             tn: 5,
             speed: "1 round",
             range: "Self",
@@ -435,10 +437,11 @@ export const gabriela:CharacterSheet = {
                         type: "dice_promote",
                         faces: successes,
                     },
-                    reason: "Armor of Righteousness",
+                    reason: "Smite",
                 };
             },
             tn: 5,
+            aptitudeRollKey: { traitName: "Spirit", aptitudeName: "Faith" },
             range: "Self",
             speed: "1 round",
             duration: 20, // 1 minute

@@ -5,6 +5,7 @@ import * as FRP from 'sodium-frp-react';
 import { Wound } from '../WoundTracker';
 import { AptitudeKey, Bonus, applyAptitudeBonuses, bonusApplies } from '../Model';
 import { DiceSet } from '../DiceSet';
+import { DiceCodeCopy, wireDiceCodeCopyFrp, DiceCodeCopyFrp } from '../DiceCodeCopy';
 
 export interface PureAptitudeInput {
     key: AptitudeKey;
@@ -13,10 +14,11 @@ export interface PureAptitudeInput {
 }
 
 export interface PureAptitudeInternal {
-    diceSet: Cell<DiceSet>;
+    diceCodeCopyFrp: DiceCodeCopyFrp;
 }
 
 export interface PureAptitudeOutput {
+    diceSet: Cell<DiceSet>;
 }
 
 export interface PureAptitudeFrp {
@@ -27,11 +29,15 @@ export interface PureAptitudeFrp {
 
 export function wirePureAptitudeFrp(input:PureAptitudeInput): PureAptitudeFrp {
     const diceSet = input.aptitudeDiceSet.lift(input.bonuses, applyAptitudeBonuses);
+    const diceCodeCopyFrp = wireDiceCodeCopyFrp({ diceSet });
+
     return {
         input,
-        output: {},
-        internal: {
+        output: {
             diceSet,
+        },
+        internal: {
+            diceCodeCopyFrp,
         },
     };
 }
@@ -48,12 +54,12 @@ export class PureAptitude extends React.Component<PureAptitudeProps, PureAptitud
     constructor(props:PureAptitudeProps) {
         super(props);
         this.state = {
-            diceSet: props.frp.internal.diceSet.sample(),
+            diceSet: props.frp.output.diceSet.sample(),
         };
     }
 
     public componentDidMount() {
-        this.props.frp.internal.diceSet.listen((diceSet) => {
+        this.props.frp.output.diceSet.listen((diceSet) => {
             this.setState({ diceSet });
         });
     }
@@ -72,6 +78,7 @@ export class PureAptitude extends React.Component<PureAptitudeProps, PureAptitud
         return <li className="pure-aptitude">
             <span className="name">{frp.input.key.aptitudeName}</span>
             <span className="value">{diceSet.toString()}</span>
+            <DiceCodeCopy type="aptitude" frp={ this.props.frp.internal.diceCodeCopyFrp } />
         </li>;
     }
 

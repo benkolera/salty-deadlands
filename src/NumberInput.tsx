@@ -4,23 +4,28 @@ import { Cell, StreamSink, Stream, CellLoop, Transaction } from 'sodiumjs';
 import * as FRP from 'sodium-frp-react';
 import { leftmost } from './CharacterSheet/Utils';
 
+export interface NumberInputInput {
+    setInput: Stream<number | undefined>;
+    initialValue?: number;
+}
+
 export interface NumberInputInternal {
     inputChanges: StreamSink<number>;
 }
 
 export interface NumberInputFrp {
-    input: Stream<number | undefined>;
+    input: NumberInputInput;
     internal: NumberInputInternal;
     output: Cell<number>;
 }
 
-export function wireNumberInputFrp(setInput: Stream<number | undefined>): NumberInputFrp {
+export function wireNumberInputFrp(input: NumberInputInput): NumberInputFrp {
     const inputChanges = new StreamSink<number>();
-    const output = inputChanges.hold(0);
+    const output = inputChanges.hold(input.initialValue || 0);
 
     return {
         output,
-        input: setInput,
+        input,
         internal: {
             inputChanges,
         },
@@ -29,7 +34,7 @@ export function wireNumberInputFrp(setInput: Stream<number | undefined>): Number
 
 export interface NumberInputProps {
     frp: NumberInputFrp;
-    placeholder: string;
+    placeholder?: string;
     className?: string;
 }
 
@@ -47,7 +52,7 @@ export class NumberInput extends React.Component<NumberInputProps, NumberInputSt
     }
 
     public componentDidMount() {
-        this.props.frp.input.listen((value) => {
+        this.props.frp.input.setInput.listen((value) => {
             if (this.input) {
                 this.input.value = (value ? value.toString() : "");
             }
@@ -55,13 +60,14 @@ export class NumberInput extends React.Component<NumberInputProps, NumberInputSt
     }
 
     public render() {
-        const { placeholder, className } = this.props;
+        const { frp, placeholder, className } = this.props;
         const { } = this.state;
 
         return <input
             type="number"
             placeholder={placeholder}
             className={className}
+            defaultValue={ frp.input.initialValue ? frp.input.initialValue.toString() : "" }
             ref={input => this.input = input}
             onChange={this.onChange.bind(this)}
             />;

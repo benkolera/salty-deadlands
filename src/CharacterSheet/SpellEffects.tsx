@@ -8,6 +8,7 @@ import {
     SpellEffectSection, SpellEffectSectionFrp, wireSpellEffectSectionFrp,
 } from "./SpellEffects/SpellEffectSection";
 import { DiceSet } from './DiceSet';
+import { TraitsFrp } from './index';
 
 /*
 This displays the whole right sidebar and outputs all active bonuses.
@@ -20,6 +21,7 @@ export interface SpellEffectsInput {
     knacks: Cell<EffectSet>;
     roundProgressed: Stream<Unit>;
     combatEnded: Stream<Unit>;
+    traitsFrp: Cell<TraitsFrp>;
 }
 
 export interface SpellEffectsInternal {
@@ -45,21 +47,25 @@ export function wireSpellEffectsFrp(input:SpellEffectsInput): SpellEffectsFrp {
         effectSet: input.edges,
         roundProgressed: input.roundProgressed,
         combatEnded: input.combatEnded,
+        traitsFrp: input.traitsFrp,
     });
     const hinderancesFrp = wireSpellEffectSectionFrp({
         effectSet: input.hinderances,
         roundProgressed: input.roundProgressed,
         combatEnded: input.combatEnded,
+        traitsFrp: input.traitsFrp,
     });
     const blessingsFrp = wireSpellEffectSectionFrp({
         effectSet: input.blessings,
         roundProgressed: input.roundProgressed,
         combatEnded: input.combatEnded,
+        traitsFrp: input.traitsFrp,
     });
     const knacksFrp = wireSpellEffectSectionFrp({
         effectSet: input.knacks,
         roundProgressed: input.roundProgressed,
         combatEnded: input.combatEnded,
+        traitsFrp: input.traitsFrp,
     });
 
     const passiveBonuses = edgesFrp.output.bonuses.lift4(

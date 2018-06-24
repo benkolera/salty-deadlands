@@ -9,30 +9,32 @@ import { SpellEffects, SpellEffectsFrp, wireSpellEffectsFrp } from './SpellEffec
 import { WoundTracker, WoundTrackerFrp, wireWoundTrackerFrp } from './WoundTracker';
 import { TurnTracker, TurnTrackerFrp, wireTurnTrackerFrp } from './TurnTracker';
 import {
-    TraitDisplay, TraitDisplayInput, wireTraitDisplayInput, wireTraitDisplayFrp,
+    TraitDisplay, TraitDisplayFrp, wireTraitDisplayInput, wireTraitDisplayFrp,
 } from './TraitDisplay';
 import * as CS from "./Model";
+import { Clipboard, ClipboardFrp, wireClipboardFrp } from './Clipboard';
+import { leftmost } from "./Utils";
 
 export interface CharacterSheetInput {
     sheet: Cell<CS.CharacterSheet>;
 }
 
 export interface TraitsFrp {
-    [key:string]: TraitDisplayInput;
-    Deftness: TraitDisplayInput;
-    Nimbleness: TraitDisplayInput;
-    Quickness: TraitDisplayInput;
-    Strength: TraitDisplayInput;
-    Vigor: TraitDisplayInput;
-    Cognition: TraitDisplayInput;
-    Knowledge: TraitDisplayInput;
-    Mien: TraitDisplayInput;
-    Smarts: TraitDisplayInput;
-    Spirit: TraitDisplayInput;
+    [key:string]: TraitDisplayFrp;
+    Deftness: TraitDisplayFrp;
+    Nimbleness: TraitDisplayFrp;
+    Quickness: TraitDisplayFrp;
+    Strength: TraitDisplayFrp;
+    Vigor: TraitDisplayFrp;
+    Cognition: TraitDisplayFrp;
+    Knowledge: TraitDisplayFrp;
+    Mien: TraitDisplayFrp;
+    Smarts: TraitDisplayFrp;
+    Spirit: TraitDisplayFrp;
 }
 
 export interface CharacterSheetInternal {
-    traitCells: TraitsFrp;
+    traitsFrp: TraitsFrp;
     woundTrackerFrp: WoundTrackerFrp;
     spellEffectsFrp: SpellEffectsFrp;
     turnTrackerFrp: TurnTrackerFrp;
@@ -44,6 +46,7 @@ export interface CharacterSheetOutput {
 export interface CharacterSheetFrp {
     input: CharacterSheetInput;
     internal: CharacterSheetInternal;
+    output: CharacterSheetOutput;
 }
 
 export function wireCharacterSheetFrp(input: CharacterSheetInput):CharacterSheetFrp {
@@ -59,6 +62,8 @@ export function wireCharacterSheetFrp(input: CharacterSheetInput):CharacterSheet
         const blessings = input.sheet.map(x => x.blessings);
         const knacks = input.sheet.map(x => x.knacks);
 
+        const traitsFrp = new CellLoop<TraitsFrp>();
+
         const turnTrackerFrp = wireTurnTrackerFrp({});
 
         const spellEffectsFrp:SpellEffectsFrp = wireSpellEffectsFrp({
@@ -66,6 +71,7 @@ export function wireCharacterSheetFrp(input: CharacterSheetInput):CharacterSheet
             hinderances,
             blessings,
             knacks,
+            traitsFrp,
             roundProgressed: turnTrackerFrp.output.roundProgressed,
             combatEnded: turnTrackerFrp.output.combatEnded,
         });
@@ -106,30 +112,36 @@ export function wireCharacterSheetFrp(input: CharacterSheetInput):CharacterSheet
             }),
         );
 
-        const wireTDI = (traitName:string) => {
-            return wireTraitDisplayInput(input.sheet, traitName, bonuses);
+        const wireTDF = (traitName:string) => {
+            return wireTraitDisplayFrp(
+                wireTraitDisplayInput(input.sheet, traitName, bonuses),
+            );
         };
 
-        const traitCells: TraitsFrp = {
-            Deftness: wireTDI("Deftness"),
-            Nimbleness: wireTDI("Nimbleness"),
-            Quickness: wireTDI("Quickness"),
-            Strength: wireTDI("Strength"),
-            Vigor: wireTDI("Vigor"),
-            Cognition: wireTDI("Cognition"),
-            Knowledge: wireTDI("Knowledge"),
-            Mien: wireTDI("Mien"),
-            Smarts: wireTDI("Smarts"),
-            Spirit: wireTDI("Spirit"),
+        const traitsFrpV: TraitsFrp = {
+            Deftness: wireTDF("Deftness"),
+            Nimbleness: wireTDF("Nimbleness"),
+            Quickness: wireTDF("Quickness"),
+            Strength: wireTDF("Strength"),
+            Vigor: wireTDF("Vigor"),
+            Cognition: wireTDF("Cognition"),
+            Knowledge: wireTDF("Knowledge"),
+            Mien: wireTDF("Mien"),
+            Smarts: wireTDF("Smarts"),
+            Spirit: wireTDF("Spirit"),
         };
+
+        traitsFrp.loop(new Cell<TraitsFrp>(traitsFrpV));
 
         return {
             input,
             internal: {
-                traitCells,
                 woundTrackerFrp,
                 spellEffectsFrp,
                 turnTrackerFrp,
+                traitsFrp: traitsFrpV,
+            },
+            output: {
             },
         };
     });
@@ -151,11 +163,11 @@ export class CharacterSheet extends React.Component<CharacterSheetProps, Charact
             <div className="traits">
                 <h2>Traits &amp; Aptitudes</h2>
                 <ul>
-                { Object.keys(frp.internal.traitCells).map((k) => {
+                { Object.keys(frp.internal.traitsFrp).map((k) => {
                     return <TraitDisplay
                             key={k}
                             traitName={k}
-                            frp={wireTraitDisplayFrp(frp.internal.traitCells[k])}
+                            frp={frp.internal.traitsFrp[k]}
                     />;
                 })}
                 </ul>
@@ -176,6 +188,7 @@ export class CharacterSheet extends React.Component<CharacterSheetProps, Charact
             </div>
         </div>;
     }
+
 }
 
 ReactDOM.render(

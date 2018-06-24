@@ -1,8 +1,9 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { Cell, StreamSink, Stream, CellLoop, Transaction } from 'sodiumjs';
+import { Cell, StreamSink, Stream, CellLoop, Transaction, Operational } from 'sodiumjs';
 import * as FRP from 'sodium-frp-react';
 import { PureAptitude, PureAptitudeFrp } from './PureAptitude';
+import { leftmost } from "../Utils";
 
 export interface ConcentrationsInput {
     concentrations: Cell<{[key:string]: PureAptitudeFrp}>;
@@ -23,7 +24,8 @@ export interface ConcentrationsFrp {
 export function wireConcentrationsFrp(input:ConcentrationsInput): ConcentrationsFrp {
     return {
         input,
-        output: {},
+        output: {
+        },
         internal: {
         },
     };

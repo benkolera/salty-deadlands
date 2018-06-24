@@ -5,6 +5,7 @@ import { Wound } from '../WoundTracker';
 import { AptitudeKey, Bonus, bonusApplies, EffectSet, Effect } from '../Model';
 import { DiceSet } from '../DiceSet';
 import { SpellEffect, wireSpellEffectFrp, SpellEffectFrp } from './SpellEffect';
+import { TraitsFrp } from '..';
 
 /*
 This presents a list of effects, using the SpellEffect component for every effect
@@ -15,6 +16,7 @@ export interface SpellEffectSectionInput {
     effectSet: Cell<EffectSet>;
     roundProgressed: Stream<Unit>;
     combatEnded: Stream<Unit>;
+    traitsFrp: Cell<TraitsFrp>;
 }
 
 export interface SpellEffectSectionInternal {
@@ -41,6 +43,7 @@ export function wireSpellEffectSectionFrp(input:SpellEffectSectionInput): SpellE
                     effect,
                     roundProgressed: input.roundProgressed,
                     combatEnded: input.combatEnded,
+                    traitsFrp: input.traitsFrp,
                 }) };
             },
             {},

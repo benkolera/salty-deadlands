@@ -11,6 +11,10 @@ import {
 import { DiceSet } from '../DiceSet';
 import { NumberInput, NumberInputFrp, wireNumberInputFrp } from '../../NumberInput';
 import { leftmost } from "../Utils";
+import { ClipboardFrp, wireClipboardFrp, Clipboard } from '../Clipboard';
+import { TraitsFrp } from '..';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faDice } from '@fortawesome/fontawesome-pro-light';
 
 /*
 This component manages drawing a single effect, including a form and a button
@@ -22,6 +26,7 @@ export interface SpellEffectInput {
     effect: Cell<Effect>;
     roundProgressed: Stream<Unit>;
     combatEnded: Stream<Unit>;
+    traitsFrp: Cell<TraitsFrp>;
 }
 
 // Internally, we need to keep track of:
@@ -35,6 +40,9 @@ export interface SpellEffectInternal {
     roundsRemaining: Cell<number>;
     toggleText: StreamSink<Unit>;
     showText: Cell<boolean>;
+    clipboardFrp: ClipboardFrp;
+    diceSet: Cell<DiceSet | null>;
+    doCopy: StreamSink<Unit>;
 }
 
 // And we output either a bonus or null
@@ -53,7 +61,7 @@ type RoundsUpdater = (r:number, e:Effect) => number;
 
 export function wireSpellEffectFrp(input:SpellEffectInput): SpellEffectFrp {
     const reset = new StreamLoop<Unit>();
-    const spellInput = wireNumberInputFrp(reset.mapTo(undefined));
+    const spellInput = wireNumberInputFrp({ setInput: reset.mapTo(undefined) });
 
     const roundsRemaining = new CellLoop<number>();
     const toggle = new StreamSink<Unit>();
@@ -80,6 +88,37 @@ export function wireSpellEffectFrp(input:SpellEffectInput): SpellEffectFrp {
         return x === 0;
     }));
 
+    const diceSet: Cell<DiceSet | null> = input.effect["fantasy-land/chain"]((e) => {
+        if (e.type === "spell") {
+            const k = e.aptitudeRollKey;
+            return input.traitsFrp["fantasy-land/chain"]((ts) => {
+                // tslint:disable-next-line:max-line-length
+                return ts[e.aptitudeRollKey.traitName].output.aptitudes["fantasy-land/chain"]((as) => {
+                    if (k.concentrationName) {
+                        const out = as[k.concentrationName];
+                        if (out.type === "concentrated") {
+                            // tslint:disable-next-line:max-line-length
+                            return out.concentrationsFrp.input.concentrations["fantasy-land/chain"]((cs) => {
+                                return cs[k.aptitudeName].input.aptitudeDiceSet;
+                            });
+                        } else {
+                            return new Cell<DiceSet | null>(null);
+                        }
+                    } else {
+                        const out = as[e.aptitudeRollKey.aptitudeName];
+                        if (out.type === "pure") {
+                            return out.value.input.aptitudeDiceSet;
+                        } else {
+                            return new Cell<DiceSet | null>(null);
+                        }
+                    }
+                });
+            });
+        } else {
+            return new Cell<DiceSet | null>(null);
+        }
+    });
+
     // Whether we output a bonus or not depends on the type
     // and whether the effect is activated (if it is a spell).
     const bonus = roundsRemaining.lift3(
@@ -102,6 +141,26 @@ export function wireSpellEffectFrp(input:SpellEffectInput): SpellEffectFrp {
         toggleText.snapshot(showText, (u, s) => !s).hold(false),
     );
 
+    const doCopy = new StreamSink<string>();
+    const inputText = diceSet.lift(input.effect, (ds, e) => {
+        if (ds && e.type === "spell") {
+            if (e.tn === "Opposed") {
+                return "\\die " + ds.toFgCode({ tn: 5, sum: false, raises: true });
+            } else if (e.tn === "Special") {
+                return ""; // TODO
+            } else {
+                return "\\die " + ds.toFgCode({ tn: e.tn, sum: false, raises: true });
+            }
+        } else {
+            return "";
+        }
+    });
+
+    const clipboardFrp = wireClipboardFrp({
+        doCopy,
+        inputText,
+    });
+
     return {
         input,
         output: {
@@ -113,6 +172,9 @@ export function wireSpellEffectFrp(input:SpellEffectInput): SpellEffectFrp {
             showText,
             spellInput,
             roundsRemaining,
+            clipboardFrp,
+            diceSet,
+            doCopy,
         },
     };
 }
@@ -126,6 +188,7 @@ export interface SpellEffectState {
     effect: Effect;
     roundsRemaining: number;
     showText: boolean;
+    diceSet: DiceSet | null;
 }
 
 export class SpellEffect extends React.Component<SpellEffectProps, SpellEffectState> {
@@ -135,6 +198,7 @@ export class SpellEffect extends React.Component<SpellEffectProps, SpellEffectSt
             effect: props.frp.input.effect.sample(),
             roundsRemaining: props.frp.internal.roundsRemaining.sample(),
             showText: props.frp.internal.showText.sample(),
+            diceSet: props.frp.internal.diceSet.sample(),
         };
     }
 
@@ -148,6 +212,9 @@ export class SpellEffect extends React.Component<SpellEffectProps, SpellEffectSt
         this.props.frp.internal.showText.listen((showText) => {
             return this.setState({ showText });
         });
+        this.props.frp.internal.diceSet.listen((diceSet) => {
+            return this.setState({ diceSet });
+        });
     }
 
     humanizeType(t:string) {
@@ -160,7 +227,7 @@ export class SpellEffect extends React.Component<SpellEffectProps, SpellEffectSt
 
     public render() {
         const { frp, name } = this.props;
-        const { effect, roundsRemaining, showText } = this.state;
+        const { effect, roundsRemaining, showText, diceSet } = this.state;
 
         const activated = roundsRemaining > 0;
         const hasDesc = effect.desc !== undefined && effect.desc.length > 0;
@@ -181,6 +248,16 @@ export class SpellEffect extends React.Component<SpellEffectProps, SpellEffectSt
             {effect.type === "spell" ?
                 (
                     <div className="spell-form">
+                        { diceSet !== null 
+                        ? <span onClick={this.onDiceClick.bind(this)}>
+                            <FontAwesomeIcon 
+                                className="spell-dice" 
+                                icon={faDice} 
+                            />
+                            <Clipboard display="hidden" frp={ frp.internal.clipboardFrp } />
+                        </span>
+                        : <></> 
+                        }
                         <NumberInput
                             frp={frp.internal.spellInput}
                             placeholder={effect.spellInputDesc}
@@ -212,6 +289,10 @@ export class SpellEffect extends React.Component<SpellEffectProps, SpellEffectSt
 
     private onActivate(e: React.ChangeEvent<HTMLInputElement>) {
         this.props.frp.internal.toggle.send(Unit);
+    }
+
+    private onDiceClick(e: React.ChangeEvent<HTMLInputElement>) {
+        this.props.frp.internal.doCopy.send(Unit);
     }
 
     private onToggleDesc(e: React.ChangeEvent<HTMLInputElement>) {
