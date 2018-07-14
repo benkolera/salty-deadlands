@@ -16,7 +16,7 @@ import {
     Concentrations, ConcentrationsFrp, wireConcentrationsFrp,
 } from './TraitDisplay/Concentrations';
 import { leftmost } from "./Utils";
-import { DiceCodeCopy, wireDiceCodeCopyFrp, DiceCodeCopyFrp } from './DiceCodeCopy';
+import { DiceCodeCopy, wireDiceCodeCopyFrp, DiceCodeCopyFrp, DiceCodeType } from './DiceCodeCopy';
 
 /*
 The Job of this component is to take all current bonuses, a trait and present the current dice sets
@@ -168,7 +168,10 @@ export function wireTraitDisplayFrp(input: TraitDisplayInput): TraitDisplayFrp {
         return out;
     });
 
-    const diceCodeCopyFrp = wireDiceCodeCopyFrp({ diceSet });
+    const diceCodeTypes:DiceCodeType[] = input.traitName === "Strength"
+        ? ["damage", "normal", "untrained"]
+        : ["normal", "untrained"];
+    const diceCodeCopyFrp = wireDiceCodeCopyFrp({ diceSet, diceCodeTypes });
 
     return {
         input,
@@ -225,7 +228,7 @@ export class TraitDisplay extends React.Component<TraitDisplayProps, TraitDispla
             <span className="trait-name">{traitName}</span>
             <span className="trait-dice">
                 {diceSet.toString()}
-                <DiceCodeCopy type="trait" frp={this.props.frp.internal.diceCodeCopyFrp} />
+                <DiceCodeCopy frp={this.props.frp.internal.diceCodeCopyFrp} />
             </span>
             <ul className="aptitudes">
                 {Object.keys(aptitudes).map((k) => {

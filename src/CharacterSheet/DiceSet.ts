@@ -79,7 +79,7 @@ export class DiceSet {
         return this.clone({ bonus: this.bonus + bonus });
     }
     toFgCode(exploding?:ExplodingRoll): string {
-        return this.toString() + (
+        return "/die " + this.toString() + (
             exploding !== undefined ? toExplodingCode(exploding) : ""
         );
     }

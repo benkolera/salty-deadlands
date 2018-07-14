@@ -5,7 +5,7 @@ import * as FRP from 'sodium-frp-react';
 import { Wound } from '../WoundTracker';
 import { AptitudeKey, Bonus, applyAptitudeBonuses, bonusApplies } from '../Model';
 import { DiceSet } from '../DiceSet';
-import { DiceCodeCopy, wireDiceCodeCopyFrp, DiceCodeCopyFrp } from '../DiceCodeCopy';
+import { DiceCodeCopy, wireDiceCodeCopyFrp, DiceCodeCopyFrp, DiceCodeType } from '../DiceCodeCopy';
 
 export interface PureAptitudeInput {
     key: AptitudeKey;
@@ -29,7 +29,8 @@ export interface PureAptitudeFrp {
 
 export function wirePureAptitudeFrp(input:PureAptitudeInput): PureAptitudeFrp {
     const diceSet = input.aptitudeDiceSet.lift(input.bonuses, applyAptitudeBonuses);
-    const diceCodeCopyFrp = wireDiceCodeCopyFrp({ diceSet });
+    const diceCodeTypes:DiceCodeType[] = ["normal"];
+    const diceCodeCopyFrp = wireDiceCodeCopyFrp({ diceSet, diceCodeTypes });
 
     return {
         input,
@@ -78,7 +79,7 @@ export class PureAptitude extends React.Component<PureAptitudeProps, PureAptitud
         return <li className="pure-aptitude">
             <span className="name">{frp.input.key.aptitudeName}</span>
             <span className="value">{diceSet.toString()}</span>
-            <DiceCodeCopy type="aptitude" frp={ this.props.frp.internal.diceCodeCopyFrp } />
+            <DiceCodeCopy frp={ this.props.frp.internal.diceCodeCopyFrp } />
         </li>;
     }
 

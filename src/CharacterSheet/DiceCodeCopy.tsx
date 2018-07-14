@@ -9,16 +9,17 @@ import { DiceSet } from './DiceSet';
 import { NumberInput, NumberInputFrp, wireNumberInputFrp } from '../NumberInput';
 import { Clipboard, wireClipboardFrp, ClipboardFrp } from './Clipboard';
 
+export type DiceCodeType = "normal" | "untrained" | "damage";
+
 export interface DiceCodeCopyInput {
     diceSet: Cell<DiceSet>;
+    diceCodeTypes: DiceCodeType[];
 }
 
 export interface DiceCodeCopyInternal {
-    doCopy: StreamSink<Unit>;
+    doCopy: StreamSink<DiceCodeType>;
     numberInput: NumberInputFrp;
-    clipboardFrp: ClipboardFrp;
-    toggleUntrained: StreamSink<Unit>;
-    untrained: Cell<boolean>;
+    clipboardFrps: Record<DiceCodeType, ClipboardFrp>;
 }
 
 export interface DiceCodeCopyOutput {
@@ -31,24 +32,33 @@ export interface DiceCodeCopyFrp {
 }
 
 export function wireDiceCodeCopyFrp(input:DiceCodeCopyInput): DiceCodeCopyFrp {
-    const doCopy = new StreamSink<Unit>();
+    const doCopy = new StreamSink<DiceCodeType>();
     const toggleUntrained = new StreamSink<Unit>();
     const setNumber = new StreamSink<number | undefined>();
     const numberInput = wireNumberInputFrp({ setInput: setNumber, initialValue: 5 });
-    const untrained = new CellLoop<boolean>();
-    untrained.loop(
-        toggleUntrained.snapshot(untrained, (unit, untrained) => !untrained).hold(false),
+
+    const clipboardFrps = input.diceCodeTypes.reduce(
+        (acc, t) => {
+            const diceText = numberInput.output.lift(input.diceSet, (tn, ds) => {
+                const vsTn = { tn, sum: false, raises: true };
+                switch (t) {
+                case "untrained":
+                    return ds.clone({ num: 1, bonus: ds.bonus - 4 }).toFgCode(vsTn);
+                case "normal": return ds.toFgCode(vsTn);
+                case "damage": return ds.toFgCode({ sum: true, raises: false });
+                }
+            });
+
+            return {
+                ...acc,
+                [t]: wireClipboardFrp({
+                    doCopy: doCopy.filter(x => x === t),
+                    inputText: diceText,
+                }),
+            };
+        },
+        {} as Record<DiceCodeType, ClipboardFrp>,
     );
-
-    const diceText = numberInput.output.lift3(input.diceSet, untrained, (tn, ds, u) => {
-        const d = u ? ds.clone({ num: 1, bonus: ds.bonus - 4 }) : ds;
-        return "/die " + d.toFgCode({ tn, sum: false, raises: true });
-    });
-
-    const clipboardFrp = wireClipboardFrp({
-        doCopy,
-        inputText: diceText,
-    });
 
     return {
         input,
@@ -57,16 +67,12 @@ export function wireDiceCodeCopyFrp(input:DiceCodeCopyInput): DiceCodeCopyFrp {
         internal: {
             numberInput,
             doCopy,
-            clipboardFrp,
-            toggleUntrained,
-            untrained,
+            clipboardFrps,
         },
     };
 }
-
 export interface DiceCodeCopyProps {
     frp: DiceCodeCopyFrp;
-    type: "trait" | "aptitude";
 }
 
 export interface DiceCodeCopyState {
@@ -91,7 +97,7 @@ export class DiceCodeCopy extends React.Component<DiceCodeCopyProps, DiceCodeCop
     }
 
     public render() {
-        const { frp, type } = this.props;
+        const { frp } = this.props;
         const { opened } = this.state;
 
         return <div className="dicecode-container">
@@ -103,16 +109,17 @@ export class DiceCodeCopy extends React.Component<DiceCodeCopyProps, DiceCodeCop
                     <label>TN:
                         <NumberInput className="dicecode-tn" frp={frp.internal.numberInput} />
                     </label>
-                    { type === "trait"
-                     ? <label className="untrained" >Untrained?
-                         <input type="checkbox" onChange={this.onToggleUntrained.bind(this)} />
-                     </label>
-                     : <></>
-                     }
-                    <Clipboard display="inline" frp={ frp.internal.clipboardFrp } />
-                    <span onClick={this.onClick.bind(this)}>
-                        <FontAwesomeIcon icon={ faCopy } />
-                    </span>
+                    <ul>
+                        {Object.keys(frp.internal.clipboardFrps).map((k:DiceCodeType) => {
+                            return <li key={k}>
+                                {k}:
+                                <Clipboard display="inline" frp={frp.internal.clipboardFrps[k]} />
+                                <span onClick={this.onClick.bind(this)(k)}>
+                                    <FontAwesomeIcon icon={faCopy} />
+                                </span>
+                            </li>;
+                        })}
+                    </ul>
                 </div>
             </div>
         </div>;
@@ -125,13 +132,11 @@ export class DiceCodeCopy extends React.Component<DiceCodeCopyProps, DiceCodeCop
         });
     }
 
-    onToggleUntrained():void {
-        this.props.frp.internal.toggleUntrained.send(Unit);
-    }
-
-    onClick():void {
-        this.setState({ opened: false });
-        this.props.frp.internal.doCopy.send(Unit);
+    onClick(t: DiceCodeType): () => void {
+        return () => {
+            this.setState({ opened: false });
+            this.props.frp.internal.doCopy.send(t);
+        };
     }
 
 }

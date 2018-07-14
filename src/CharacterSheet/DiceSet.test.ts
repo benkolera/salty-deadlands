@@ -6,36 +6,36 @@ import {
 
 describe("toDiceCode", () => {
     test("Return diceset with no explosions", () => {
-        expect(new DiceSet(5, 12).toFgCode()).toEqual("5d12");
+        expect(new DiceSet(5, 12).toFgCode()).toEqual("/die 5d12");
     });
     test("Return diceset with a bonus and no explosions", () => {
-        expect(new DiceSet(5, 12, 2).toFgCode()).toEqual("5d12+2");
+        expect(new DiceSet(5, 12, 2).toFgCode()).toEqual("/die 5d12+2");
     });
     test("Return diceset with explosions summed", () => {
         expect(new DiceSet(5, 12, 2).toFgCode({
             sum: true,
             raises: false,
-        })).toEqual("5d12+2!");
+        })).toEqual("/die 5d12+2!");
     });
     test("Return diceset with explosions and keep highest", () => {
         expect(new DiceSet(5, 12, 2).toFgCode({
             sum: false,
             raises: false,
-        })).toEqual("5d12+2!k");
+        })).toEqual("/die 5d12+2!k");
     });
     test("Return diceset against tn with to raises", () => {
         expect(new DiceSet(5, 12, 2).toFgCode({
             sum: false,
             tn: 7,
             raises: false,
-        })).toEqual("5d12+2!kt7");
+        })).toEqual("/die 5d12+2!kt7");
     });
     test("Return diceset against tn with raises", () => {
         expect(new DiceSet(5, 12, 2).toFgCode({
             sum: false,
             tn: 7,
             raises: true,
-        })).toEqual("5d12+2!kt7s5");
+        })).toEqual("/die 5d12+2!kt7s5");
     });
 });
 
